@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { formatStatus, truncateDescription } from "@/utils/format";
 
 interface Task {
   id: string;
@@ -360,7 +361,7 @@ export default function Dashboard() {
                     : "text-zinc-400 hover:text-zinc-200"
                 }`}
               >
-                {status === "ALL" ? "All" : status === "IN_PROGRESS" ? "In Progress" : status.charAt(0) + status.slice(1).toLowerCase()}
+                {status === "ALL" ? "All" : formatStatus(status)}
               </button>
             ))}
           </div>
@@ -446,7 +447,7 @@ export default function Dashboard() {
 
                   {/* Card Body (Description) */}
                   <p className="text-zinc-400 text-xs leading-relaxed mb-6 whitespace-pre-wrap break-words">
-                    {task.description || "No description provided."}
+                    {truncateDescription(task.description) || "No description provided."}
                   </p>
                 </div>
 
@@ -471,7 +472,7 @@ export default function Dashboard() {
                           : "bg-sky-400"
                       }`}
                     ></span>
-                    {task.status === "IN_PROGRESS" ? "In Progress" : task.status}
+                    {formatStatus(task.status)}
                   </span>
 
                   {/* Quick update select */}
