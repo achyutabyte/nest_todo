@@ -20,8 +20,8 @@ export class UserRepository extends Repository<User> {
         try {
             await this.save(user);
         } catch (error) {
-            if (error.code === '23505') { // duplicate key value violates unique constraint
-                const detail = error.detail || '';
+            if (error.code === '23505' || error.code === 'SQLITE_CONSTRAINT' || (error.message && error.message.includes('UNIQUE constraint failed'))) {
+                const detail = error.detail || error.message || '';
                 if (detail.includes('username')) {
                     throw new ConflictException('Username already exists');
                 } else if (detail.includes('email')) {

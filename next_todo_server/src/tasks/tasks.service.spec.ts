@@ -5,7 +5,7 @@ import { TaskRepository } from './task.repository';
 import { Task } from './task.entity';
 import { User } from '../auth/user.entity';
 import { TaskStatus } from './task-status.enum';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
 describe('TasksService (Integration)', () => {
@@ -86,13 +86,45 @@ describe('TasksService (Integration)', () => {
             await userRepo.save(otherUser);
 
             // Seed a task for otherUser
-            const task2 = await tasksService.createTask({ title: 'User 2 Task', description: 'Desc' }, otherUser);
+            await tasksService.createTask({ title: 'User 2 Task', description: 'Desc' }, otherUser);
 
             // Fetch tasks for testUser
             const result = await tasksService.getTasks({}, testUser);
             expect(result.length).toBe(1);
             expect(result[0].id).toBe(task1.id);
             expect(result[0].title).toBe('User 1 Task');
+        });
+
+        it('applies a status filter successfully', async () => {
+            await tasksService.createTask({ title: 'Open Task', description: 'Desc' }, testUser);
+            const inProgressTask = await tasksService.createTask({ title: 'In Progress Task', description: 'Desc' }, testUser);
+            await tasksService.updateTaskStatus(inProgressTask.id, TaskStatus.IN_PROGRESS, testUser);
+
+            const result = await tasksService.getTasks({ status: TaskStatus.IN_PROGRESS }, testUser);
+            expect(result.length).toBe(1);
+            expect(result[0].id).toBe(inProgressTask.id);
+            expect(result[0].status).toBe(TaskStatus.IN_PROGRESS);
+        });
+
+        it('applies a search query successfully', async () => {
+            const matchTask = await tasksService.createTask({ title: 'Find Me Task', description: 'Specific keyword' }, testUser);
+            await tasksService.createTask({ title: 'Ignore Task', description: 'Desc' }, testUser);
+
+            const result = await tasksService.getTasks({ search: 'keyword' }, testUser);
+            expect(result.length).toBe(1);
+            expect(result[0].id).toBe(matchTask.id);
+        });
+
+        it('throws InternalServerErrorException on query failure', async () => {
+            jest.spyOn(taskRepository, 'createQueryBuilder').mockReturnValueOnce({
+                where: jest.fn().mockReturnThis(),
+                andWhere: jest.fn().mockReturnThis(),
+                getMany: jest.fn().mockRejectedValueOnce(new Error('Database Error')),
+            } as any);
+
+            await expect(tasksService.getTasks({}, testUser)).rejects.toThrow(
+                InternalServerErrorException,
+            );
         });
     });
 
