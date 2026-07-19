@@ -15,27 +15,12 @@ export class TasksService {
     ) { }
 
     async getTasks(filterDto: GetTasksFilterDto, user: User): Promise<Task[]> {
-        const { status, search } = filterDto;
-        const query = this.taskRepository.createQueryBuilder('task');
-        query.where('task.userId = :userId', { userId: user.id });
-
-        if (status) {
-            query.andWhere('task.status = :status', { status });
-        }
-
-        if (search) {
-            query.andWhere(
-                '(LOWER(task.title) LIKE LOWER(:search) OR LOWER(task.description) LIKE LOWER(:search))',
-                { search: `%${search}%` },
-            );
-        }
-        const tasks = await query.getMany();
-        return tasks;
+        return this.taskRepository.getTasks(filterDto, user);
     }
 
     async getTaskById(id: string, user: User): Promise<Task> {
         const found = await this.taskRepository.findOne({
-            where: { id, user }
+            where: { id, user: { id: user.id } }
         });
 
         if (!found) {
@@ -50,7 +35,7 @@ export class TasksService {
     }
 
     async deleteTask(id: string, user: User): Promise<void> {
-        const result = await this.taskRepository.delete({ id, user });
+        const result = await this.taskRepository.delete({ id, user: { id: user.id } });
 
         if (result.affected === 0) {
             throw new NotFoundException(`Task with ID "${id}" not found`);

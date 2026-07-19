@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Logger, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { GetTasksFilterDto } from './dto/get-task-filter.dto';
@@ -11,6 +11,8 @@ import { User } from '../auth/user.entity';
 @Controller('tasks')
 @UseGuards(AuthGuard())
 export class TasksController {
+    private logger = new Logger('TasksController');
+
     constructor(private tasksService: TasksService) { }
 
     @Get()
@@ -18,6 +20,7 @@ export class TasksController {
         @Query() filterDto: GetTasksFilterDto,
         @GetUser() user: User,
     ): Promise<Task[]> {
+        this.logger.verbose(`User "${user.username}" retrieving all tasks. Filters: ${JSON.stringify(filterDto)}`);
         return this.tasksService.getTasks(filterDto, user);
     }
 
@@ -26,6 +29,7 @@ export class TasksController {
         @Param('id') id: string,
         @GetUser() user: User,
     ): Promise<Task> {
+        this.logger.verbose(`User "${user.username}" retrieving task with ID "${id}"`);
         return this.tasksService.getTaskById(id, user);
     }
 
@@ -34,6 +38,7 @@ export class TasksController {
         @Body() createTaskDto: CreateTaskDto,
         @GetUser() user: User,
     ): Promise<Task> {
+        this.logger.verbose(`User "${user.username}" creating a new task. Data: ${JSON.stringify(createTaskDto)}`);
         return this.tasksService.createTask(createTaskDto, user);
     }
 
@@ -42,6 +47,7 @@ export class TasksController {
         @Param('id') id: string,
         @GetUser() user: User,
     ): Promise<void> {
+        this.logger.verbose(`User "${user.username}" deleting task with ID "${id}"`);
         return this.tasksService.deleteTask(id, user);
     }
 
@@ -52,6 +58,7 @@ export class TasksController {
         @GetUser() user: User,
     ): Promise<Task> {
         const { status } = updateTaskStatusDto;
+        this.logger.verbose(`User "${user.username}" updating status of task with ID "${id}" to "${status}"`);
         return this.tasksService.updateTaskStatus(id, status, user);
     }
 }
